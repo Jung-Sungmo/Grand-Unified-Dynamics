@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>鄭誠模の大統一動力学 - 多次元軌道エンジンマスターシミュレータ [Ver 1.0 最終公開版]</title>
+    <style>
+        body { margin: 0; background: #020617; color: #e2e8f0; font-family: 'Meiryo', 'Yu Gothic', sans-serif; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
+        .panel { background: #0f172a; width: 560px; padding: 20px; box-sizing: border-box; border-right: 1px solid #1e293b; overflow-y: auto; z-index: 10; box-shadow: 5px 0 20px rgba(0,0,0,0.8); }
+        h2 { color: #0ea5e9; font-size: 19px; margin-top: 0; border-bottom: 2px solid #1e293b; padding-bottom: 10px; line-height: 1.4; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #94a3b8; font-weight: bold; }
+        .input-row { display: flex; align-items: center; gap: 10px; }
+        input[type="range"] { flex-grow: 1; cursor: pointer; accent-color: #0ea5e9; }
+        input[type="number"] { width: 70px; background: #020617; color: #0ea5e9; border: 1px solid #334155; padding: 4px; border-radius: 4px; text-align: center; font-weight: bold; font-size: 12px; }
+        .val-display { float: right; color: #deff9a; font-weight: bold; font-size: 12px; }
+        canvas { flex-grow: 1; background: radial-gradient(circle at center, #0a0f1e, #000000); }
+        .global-box { padding: 15px; background: rgba(222,255,154,0.05); border-radius: 8px; border: 1px solid rgba(222,255,154,0.2); margin-bottom: 20px; }
+        .orbit-box { padding: 12px; background: rgba(14,165,233,0.05); border-left: 4px solid #0ea5e9; border-radius: 4px; margin-bottom: 15px; }
+        .orbit-title { font-weight: bold; margin-bottom: 10px; font-size: 14px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .sub-control { margin-bottom: 8px; }
+        .sub-control label { font-size: 11px; color: #cbd5e1; }
+        .desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .btn-action { width: 100%; padding: 10px; font-size: 13px; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: all 0.2s; }
+        .btn-action:hover { opacity: 0.8; transform: translateY(-1px); }
+        .btn-axis { background: #10b981; color: #fff; }
+        .btn-axis.off { background: #f59e0b; color: #000; }
+        .patent-notice { font-size: 10px; color: #ef4444; margin-bottom: 15px; text-align: center; border: 1px solid #ef4444; padding: 5px; line-height: 1.4; }
+        .preset-btn { flex: 1 1 30%; padding: 6px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: #fff; transition: opacity 0.2s; text-align: center; line-height: 1.3;}
+        .preset-btn:hover { opacity: 0.8; }
+        .toggle-btn { flex: 1; padding: 10px; font-size: 12px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; color: #fff; transition: opacity 0.3s, transform 0.1s; opacity: 0.4; }
+        .toggle-btn.active { opacity: 1.0; transform: scale(1.02); box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+        .playback-controls { display: flex; gap: 8px; margin-bottom: 15px; }
+        .playback-controls button { flex: 1; padding: 12px 5px; font-size: 13px; font-weight: bold; color: white; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .playback-controls button:hover { opacity: 0.8; }
+        .btn-start { background: #10b981; }
+        .btn-pause { background: #f59e0b; }
+        .btn-stop { background: #ef4444; }
+        .btn-reset { background: #3b82f6; width: 100%; padding: 10px; font-weight: bold; color: white; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="panel" id="uiPanel">
+        <h2>鄭誠模の大統一動力学<br><span style="font-size:14px; color:#facc15;">粒子多次元軌道マスターエンジン [Ver 1.0]</span></h2>
+        <div class="patent-notice">※ 本シミュレータのアルゴリズムおよび力学モデルは特許出願中です。<br>第三者による無断複製、配布、および商業的/学術的盗用を厳格に禁じます。</div>
+        
+        <div class="playback-controls">
+            <button class="btn-start" id="btnStart">▶ 開始</button>
+            <button class="btn-pause" id="btnPause">⏸ 一時停止</button>
+            <button class="btn-stop" id="btnStop">⏹ 停止 (画面初期化)</button>
+        </div>
+
+        <button class="btn-reset" id="btnReset">🔄 グローバル変数初期化 (スライダーリセット)</button>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="toggle-btn active" id="btnModeSingle" style="background: #ef4444;">[観測尺度]<br>単一粒子スキャニング<br><span style="font-size:10px; font-weight:normal;">(水素プロトタイプ証明)</span></button>
+            <button class="toggle-btn" id="btnModeMulti" style="background: #3b82f6;">[観測尺度]<br>多重電子共存<br><span style="font-size:10px; font-weight:normal;">(実際の定員/車線分割)</span></button>
+        </div>
+
+        <div class="global-box" style="border-color: #f43f5e; background: rgba(244,63,94,0.05); padding-bottom: 10px;">
+            <label style="color:#f43f5e; font-size:14px; text-align:center; display:block; font-weight:bold; margin-bottom:5px;">★ 軌道力学レンダリングプリセット ★</label>
+            <div class="desc" id="modeDesc" style="text-align:center; margin-bottom:10px; font-weight:bold; color:#fcd34d;">(現在のモード：単一の粒子が3D空間全体を密に削り出します)</div>
+            <div style="display:flex; gap:6px; flex-wrap: wrap;">
+                <button class="preset-btn" style="background:#eab308; color:#000;" id="btnOrbS">s軌道<br>(球殻)</button>
+                <button class="preset-btn" style="background:#ec4899;" id="btnOrbP">p軌道<br>(直交亜鈴)</button>
+                <button class="preset-btn" style="background:#3b82f6;" id="btnOrbT">トーラス<br>(Z軸迂回)</button>
+                <button class="preset-btn" style="background:#a855f7;" id="btnOrbD">d軌道<br>(四つ葉のクローバー)</button>
+                <button class="preset-btn" style="background:#f43f5e;" id="btnOrbF">f軌道<br>(多重花弁)</button>
+                <button class="preset-btn" style="background:#10b981;" id="btnOrbM">多重融合<br>(XYZ共存)</button>
+            </div>
+        </div>
+
+        <button class="btn-action btn-axis" id="btnAxis">📐 XYZ正統物理空間軸 : ON</button>
+
+        <div class="control-group">
+            <label style="color:#deff9a; font-size:14px;">▶ 外部電子軌道の総数 (N_max)</label>
+            <div class="input-row">
+                <input type="range" id="paramN" min="1" max="10" step="1" value="3" oninput="document.getElementById('numN').value=this.value">
+                <input type="number" id="numN" min="1" max="10" step="1" value="3" oninput="document.getElementById('paramN').value=this.value; document.getElementById('paramN').dispatchEvent(new Event('input'))">
+            </div>
+        </div>
+
+        <div class="global-box">
+            <label style="color:#deff9a; font-size:13px;">▶ 観測シャッタースピードフィルター (V_obs)</label>
+            <div class="desc" style="margin-bottom:8px; color:#f43f5e;">* 1: 極端な無限残像雲 ↔ 10000: 鮮明な粒子停止</div>
+            <div class="input-row">
+                <input type="range" id="paramObs" min="1" max="10000" step="1" value="1" oninput="document.getElementById('numObs').value=this.value">
+                <input type="number" id="numObs" min="1" max="10000" step="1" value="1" oninput="document.getElementById('paramObs').value=this.value">
+            </div>
+            
+            <div style="margin-top:15px; border-top:1px solid #334155; padding-top:10px;">
+                <label style="color:#fcd34d; font-size:13px; margin-bottom:8px; display:block;">★ 全知の観察者空間ビュー制御 (Roll, Pitch, Yaw)</label>
+                <div class="sub-control">
+                    <label style="color:#fff;">カメラ倍率 (Zoom)</label>
+                    <div class="input-row">
+                        <input type="range" id="camZoom" min="0.1" max="25.0" step="0.1" value="0.6" oninput="document.getElementById('numZoom').value=this.value">
+                        <input type="number" id="numZoom" min="0.1" max="25.0" step="0.1" value="0.6" oninput="document.getElementById('camZoom').value=this.value">
+                    </div>
+                </div>
+                <div class="sub-control">
+                    <label>Z軸回転 (Yaw)</label>
+                    <div class="input-row">
+                        <input type="range" id="camRotZ" min="0" max="6.28" step="0.01" value="0.78" oninput="document.getElementById('numRotZ').value=this.value">
+                        <input type="number" id="numRotZ" min="0" max="6.28" step="0.01" value="0.78" oninput="document.getElementById('camRotZ').value=this.value">
+                    </div>
+                </div>
+                <div class="sub-control">
+                    <label>Y軸回転 (Pitch)</label>
+                    <div class="input-row">
+                        <input type="range" id="camRotY" min="0" max="6.28" step="0.01" value="0.65" oninput="document.getElementById('numRotY').value=this.value">
+                        <input type="number" id="numRotY" min="0" max="6.28" step="0.01" value="0.65" oninput="document.getElementById('camRotY').value=this.value">
+                    </div>
+                </div>
+                <div class="sub-control">
+                    <label>X軸回転 (Roll)</label>
+                    <div class="input-row">
+                        <input type="range" id="camRotX" min="0" max="6.28" step="0.01" value="0" oninput="document.getElementById('numRotX').value=this.value">
+                        <input type="number" id="numRotX" min="0" max="6.28" step="0.01" value="0" oninput="document.getElementById('camRotX').value=this.value">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dynamicOrbitsContainer"></div>
+    </div>
+
+    <canvas id="cloudCanvas"></canvas>
+
+    <script>
+        // ============================================================================
+        // [鄭誠模の大統一動力学 - 機械的軌道制御方程式 実装部 - Ver 1.0]
+        // ============================================================================
+
+        const canvas = document.getElementById('cloudCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, cx, cy;
+        let showAxis = true; 
+        
+        let isPlaying = false; 
+        let frameCount = 0;
+        let isPresetMode = false;
+        let activePresetType = '';
+        let isMultiMode = false; 
+        let sweepAngle = 0; 
+        let animationId = null;
+
+        function resize() {
+            width = canvas.width = window.innerWidth - 560;
+            height = canvas.height = window.innerHeight;
+            cx = width / 2; cy = height / 2;
+            clearScreen(); 
+        }
+        window.addEventListener('resize', resize);
+
+        const paramN = document.getElementById('paramN');
+        const paramObs = document.getElementById('paramObs');
+        const camZoom = document.getElementById('camZoom');
+        const camRotX = document.getElementById('camRotX'); 
+        const camRotY = document.getElementById('camRotY'); 
+        const camRotZ = document.getElementById('camRotZ'); 
+        const container = document.getElementById('dynamicOrbitsContainer');
+        const uiPanel = document.getElementById('uiPanel');
+        
+        const btnStart = document.getElementById('btnStart');
+        const btnPause = document.getElementById('btnPause');
+        const btnStop = document.getElementById('btnStop');
+        const btnReset = document.getElementById('btnReset');
+        const btnAxis = document.getElementById('btnAxis');
+        
+        const btnModeSingle = document.getElementById('btnModeSingle');
+        const btnModeMulti = document.getElementById('btnModeMulti');
+        const modeDesc = document.getElementById('modeDesc');
+
+        function clearScreen() {
+            ctx.fillStyle = 'rgba(2, 6, 23, 1.0)';
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        uiPanel.addEventListener('input', function(e) {
+            clearScreen();
+        });
+
+        btnStart.addEventListener('click', function() {
+            isPlaying = true;
+            btnStart.style.boxShadow = "0 0 10px #10b981";
+            btnPause.style.boxShadow = "none";
+            btnStop.style.boxShadow = "none";
+        });
+
+        btnPause.addEventListener('click', function() {
+            isPlaying = false;
+            btnPause.style.boxShadow = "0 0 10px #f59e0b";
+            btnStart.style.boxShadow = "none";
+            btnStop.style.boxShadow = "none";
+        });
+
+        btnStop.addEventListener('click', function() {
+            isPlaying = false;
+            frameCount = 0;
+            sweepAngle = 0;
+            for(let i=0; i<=10; i++) {
+                if(particleAngles[i]) {
+                    for(let s=0; s<particleAngles[i].length; s++) particleAngles[i][s] = 0;
+                }
+            }
+            clearScreen(); 
+            btnStop.style.boxShadow = "0 0 10px #ef4444";
+            btnStart.style.boxShadow = "none";
+            btnPause.style.boxShadow = "none";
+        });
+
+        btnAxis.addEventListener('click', function() {
+            showAxis = !showAxis;
+            this.innerText = `📐 XYZ正統物理空間軸 : ${showAxis ? 'ON' : 'OFF'}`;
+            if(showAxis) { this.classList.remove('off'); } else { this.classList.add('off'); }
+            clearScreen();
+        });
+
+        btnModeSingle.addEventListener('click', function() {
+            isMultiMode = false;
+            btnModeSingle.classList.add('active');
+            btnModeMulti.classList.remove('active');
+            modeDesc.innerText = "(現在のモード：単一の粒子が3D空間全体を密に削り出します)";
+            if(isPresetMode) applyOrbitalPreset(activePresetType);
+        });
+        
+        btnModeMulti.addEventListener('click', function() {
+            isMultiMode = true;
+            btnModeMulti.classList.add('active');
+            btnModeSingle.classList.remove('active');
+            modeDesc.innerText = "(現在のモード：実際の定員の粒子が摩擦回避車線を分けて走ります)";
+            if(isPresetMode) applyOrbitalPreset(activePresetType);
+        });
+
+        let particleAngles = {}; 
+        const orbitRGB = [
+            "250,204,21", "0,255,204", "14,165,233", "222,255,154", "244,63,94", "168,85,247", 
+            "251,146,60", "52,211,153", "251,207,232", "129,140,248", "253,224,71"
+        ];
+        const idealNucleusParticles = [0, 4, 20, 59, 144, 281, 470, 730, 1000, 1300, 1600];
+
+        function renderOrbitPanels() {
+            let nMax = parseInt(paramN.value);
+            for(let i=0; i<=10; i++) { if(!particleAngles[i]) particleAngles[i] = []; }
+            
+            let html = "";
+            for(let i = 0; i <= nMax; i++) {
+                let isNucleus = (i === 0);
+                let defP = isNucleus ? idealNucleusParticles[nMax] : 2 * i * i; 
+                let defS = isNucleus ? 0.05 : (0.15 / Math.sqrt(i)).toFixed(3); 
+                let defA = isNucleus ? 0.02 : (0.04 * i).toFixed(2); 
+                let defF = isNucleus ? 4 : i * 2; 
+                let defR = isNucleus ? 15 : 100 + (i - 1) * 35;
+                let maxRRange = isNucleus ? 80 : 800;
+
+                let c = `rgb(${orbitRGB[i]})`;
+                let titleName = isNucleus ? "[Layer 0] 原子核内部制御" : `[Layer ${i}] 電子軌道制御`;
+                
+                let currR = document.getElementById(`p_rad_${i}`) ? document.getElementById(`p_rad_${i}`).value : defR;
+                let currP = document.getElementById(`p_num_${i}`) ? document.getElementById(`p_num_${i}`).value : defP;
+                let currS = document.getElementById(`p_spd_${i}`) ? document.getElementById(`p_spd_${i}`).value : defS;
+                let currA = document.getElementById(`p_amp_${i}`) ? document.getElementById(`p_amp_${i}`).value : defA;
+                let currF = document.getElementById(`p_frq_${i}`) ? document.getElementById(`p_frq_${i}`).value : defF;
+
+                html += `<div class="orbit-box" style="border-left-color: ${c}; background: rgba(${orbitRGB[i]}, 0.05);">
+                    <div class="orbit-title" style="color: ${c};">${titleName}</div>
+                    <div class="sub-control">
+                        <label>基準半径 (R_base)</label>
+                        <div class="input-row">
+                            <input type="range" id="p_rad_${i}" min="${isNucleus? 5:30}" max="${maxRRange}" step="1" value="${currR}" oninput="document.getElementById('n_rad_${i}').value=this.value;">
+                            <input type="number" id="n_rad_${i}" min="${isNucleus? 5:30}" max="${maxRRange}" step="1" value="${currR}" oninput="document.getElementById('p_rad_${i}').value=this.value;">
+                        </div>
+                    </div>
+                    <div class="sub-control">
+                        <label>粒子数 (S_N) - [論文変数: n]</label>
+                        <div class="input-row">
+                            <input type="range" id="p_num_${i}" min="0" max="${isNucleus? 2000:150}" step="1" value="${currP}" oninput="document.getElementById('n_num_${i}').value=this.value;">
+                            <input type="number" id="n_num_${i}" min="0" max="${isNucleus? 2000:150}" step="1" value="${currP}" oninput="document.getElementById('p_num_${i}').value=this.value;">
+                        </div>
+                    </div>
+                    <div class="sub-control">
+                        <label>回転速度 (周期の逆数) - [論文変数: 1/T]</label>
+                        <div class="input-row">
+                            <input type="range" id="p_spd_${i}" min="0.001" max="0.5" step="0.001" value="${currS}" oninput="document.getElementById('n_spd_${i}').value=this.value;">
+                            <input type="number" id="n_spd_${i}" min="0.001" max="0.5" step="0.001" value="${currS}" oninput="document.getElementById('p_spd_${i}').value=this.value;">
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <div class="sub-control" style="flex:1;">
+                            <label>揺動振幅 (A)</label>
+                            <div class="input-row">
+                                <input type="range" id="p_amp_${i}" min="0" max="0.99" step="0.01" value="${currA}" oninput="document.getElementById('n_amp_${i}').value=this.value">
+                                <input type="number" id="n_amp_${i}" min="0" max="0.99" step="0.01" value="${currA}" oninput="document.getElementById('p_amp_${i}').value=this.value">
+                            </div>
+                        </div>
+                        <div class="sub-control" style="flex:1;">
+                            <label>揺動周波数 (F)</label>
+                            <div class="input-row">
+                                <input type="range" id="p_frq_${i}" min="0" max="20" step="1" value="${currF}" oninput="document.getElementById('n_frq_${i}').value=this.value">
+                                <input type="number" id="n_frq_${i}" min="0" max="20" step="1" value="${currF}" oninput="document.getElementById('p_frq_${i}').value=this.value">
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        renderOrbitPanels();
+        paramN.addEventListener('input', function() { 
+            if(!isPresetMode) { container.innerHTML = ""; renderOrbitPanels(); }
+        });
+
+        btnReset.addEventListener('click', function() {
+            isPresetMode = false; activePresetType = ''; 
+            isPlaying = false; frameCount = 0; sweepAngle = 0;
+            
+            document.getElementById('paramN').value = 3; document.getElementById('numN').value = 3;
+            document.getElementById('paramObs').value = 2; document.getElementById('numObs').value = 2;
+            document.getElementById('camZoom').value = 0.6; document.getElementById('numZoom').value = 0.6;
+            document.getElementById('camRotZ').value = 0.78; document.getElementById('numRotZ').value = 0.78; 
+            document.getElementById('camRotY').value = 0.65; document.getElementById('numRotY').value = 0.65; 
+            document.getElementById('camRotX').value = 0;    document.getElementById('numRotX').value = 0;    
+            
+            showAxis = true;
+            btnAxis.innerText = "📐 XYZ正統物理空間軸 : ON";
+            btnAxis.classList.remove('off');
+            
+            btnStop.style.boxShadow = "none"; btnStart.style.boxShadow = "none"; btnPause.style.boxShadow = "none";
+            
+            container.innerHTML = ""; renderOrbitPanels(); 
+            clearScreen();
+        });
+
+        function applyOrbitalPreset(type) {
+            isPresetMode = true;
+            activePresetType = type;
+            sweepAngle = 0; 
+            frameCount = 0;
+
+            document.getElementById('paramN').value = 1; 
+            document.getElementById('numN').value = 1;
+
+            renderOrbitPanels();
+            clearScreen(); 
+
+            document.getElementById('camZoom').value = 1.1; document.getElementById('numZoom').value = 1.1;
+            document.getElementById('camRotZ').value = 0.85; document.getElementById('numRotZ').value = 0.85;
+            document.getElementById('camRotY').value = 0.50; document.getElementById('numRotY').value = 0.50;
+            document.getElementById('camRotX').value = 0.00; document.getElementById('numRotX').value = 0.00;
+            
+            document.getElementById('paramObs').value = 1; document.getElementById('numObs').value = 1;
+
+            document.getElementById('p_rad_0').value = 15; document.getElementById('n_rad_0').value = 15;
+            document.getElementById('p_num_0').value = 30; document.getElementById('n_num_0').value = 30;
+            document.getElementById('p_rad_1').value = 140; document.getElementById('n_rad_1').value = 140;
+            
+            document.getElementById('p_spd_1').value = 0.15; document.getElementById('n_spd_1').value = 0.15;
+
+            let num = 1; let amp = 0.0; let frq = 0;
+            
+            if(type === 's') { amp = 0.0; frq = 0; num = isMultiMode ? 2 : 1; } 
+            else if(type === 'p') { amp = 0.95; frq = 2; num = isMultiMode ? 6 : 1; } 
+            else if(type === 'torus') { amp = 0.95; frq = 2; num = isMultiMode ? 2 : 1; } 
+            else if(type === 'd') { amp = 0.95; frq = 4; num = isMultiMode ? 10 : 1; } 
+            else if(type === 'f') { amp = 0.95; frq = 6; num = isMultiMode ? 14 : 1; } 
+            else if(type === 'multi') { amp = 0.95; frq = 4; num = isMultiMode ? 14 : 1; } 
+
+            document.getElementById('p_num_1').value = num; document.getElementById('n_num_1').value = num;
+            document.getElementById('p_amp_1').value = amp; document.getElementById('n_amp_1').value = amp;
+            document.getElementById('p_frq_1').value = frq; document.getElementById('n_frq_1').value = frq;
+
+            particleAngles[1] = [];
+            for(let s=0; s<num; s++) particleAngles[1].push(0); 
+        }
+
+        document.getElementById('btnOrbS').addEventListener('click', () => applyOrbitalPreset('s'));
+        document.getElementById('btnOrbP').addEventListener('click', () => applyOrbitalPreset('p'));
+        document.getElementById('btnOrbT').addEventListener('click', () => applyOrbitalPreset('torus'));
+        document.getElementById('btnOrbD').addEventListener('click', () => applyOrbitalPreset('d'));
+        document.getElementById('btnOrbF').addEventListener('click', () => applyOrbitalPreset('f'));
+        document.getElementById('btnOrbM').addEventListener('click', () => applyOrbitalPreset('multi'));
+
+        function project3D(x, y, z, rX, rY, rZ, focal, zoom) {
+            let tx, ty, tz;
+            tx = x * Math.cos(rZ) - y * Math.sin(rZ); ty = x * Math.sin(rZ) + y * Math.cos(rZ); x = tx; y = ty;
+            tx = x * Math.cos(rY) + z * Math.sin(rY); tz = -x * Math.sin(rY) + z * Math.cos(rY); x = tx; z = tz;
+            ty = y * Math.cos(rX) - z * Math.sin(rX); tz = y * Math.sin(rX) + z * Math.cos(rX); y = ty; z = tz;
+            let scale = focal / (focal - x); 
+            return { screenX: cx + (y * scale * zoom), screenY: cy - (z * scale * zoom), scale: scale };
+        }
+
+        resize(); 
+
+        function draw() {
+            animationId = requestAnimationFrame(draw);
+            
+            if (!isPlaying) return;
+
+            frameCount++;
+            let N_max = parseInt(paramN.value);
+            let Obs_n = parseInt(paramObs.value); 
+            let zoom = parseFloat(camZoom.value);
+            let rX = parseFloat(camRotX.value); let rY = parseFloat(camRotY.value); let rZ = parseFloat(camRotZ.value);
+
+            let fadeAlpha;
+            if (Obs_n === 1) {
+                fadeAlpha = 0.0001; 
+            } else {
+                fadeAlpha = Obs_n / 10000;
+                if(fadeAlpha < 0.0005) fadeAlpha = 0.0005; 
+            }
+            if(fadeAlpha > 1.0) fadeAlpha = 1.0;
+            
+            ctx.fillStyle = `rgba(2, 6, 23, ${fadeAlpha})`;
+            ctx.fillRect(0, 0, width, height);
+
+            let focal = 800;
+
+            if (showAxis) {
+                const axisLength = 300;
+                const origin = project3D(0, 0, 0, rX, rY, rZ, focal, zoom);
+                const xEnd = project3D(axisLength, 0, 0, rX, rY, rZ, focal, zoom);
+                const yEnd = project3D(0, axisLength, 0, rX, rY, rZ, focal, zoom);
+                const zEnd = project3D(0, 0, axisLength, rX, rY, rZ, focal, zoom);
+
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "rgba(239, 68, 68, 0.7)"; ctx.beginPath(); ctx.moveTo(origin.screenX, origin.screenY); ctx.lineTo(xEnd.screenX, xEnd.screenY); ctx.stroke();
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.7)"; ctx.beginPath(); ctx.moveTo(origin.screenX, origin.screenY); ctx.lineTo(yEnd.screenX, yEnd.screenY); ctx.stroke();
+                ctx.strokeStyle = "rgba(59, 130, 246, 0.7)"; ctx.beginPath(); ctx.moveTo(origin.screenX, origin.screenY); ctx.lineTo(zEnd.screenX, zEnd.screenY); ctx.stroke();
+                
+                ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial";
+                ctx.fillText("+X (前)", xEnd.screenX + 5, xEnd.screenY);
+                ctx.fillText("+Y (右)", yEnd.screenX + 5, yEnd.screenY);
+                ctx.fillText("+Z (上)", zEnd.screenX - 10, zEnd.screenY - 10);
+            }
+
+            let elNucRad = document.getElementById('p_rad_0');
+            let nucBaseRad = elNucRad ? parseFloat(elNucRad.value) : 15;
+            ctx.beginPath(); ctx.arc(cx, cy, nucBaseRad * zoom, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.01)"; ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+            ctx.lineWidth = 1; ctx.fill(); ctx.stroke();
+
+            if (isPresetMode) sweepAngle += (5 * Math.PI / 180) * 0.05; 
+
+            let verifiedRadii = [];
+
+            for (let i = 0; i <= N_max; i++) {
+                let elNum = document.getElementById(`p_num_${i}`); if(!elNum) continue;
+                let sCount = parseInt(elNum.value);
+                let speed = parseFloat(document.getElementById(`p_spd_${i}`).value);
+                let amp = parseFloat(document.getElementById(`p_amp_${i}`).value);
+                let freq = parseInt(document.getElementById(`p_frq_${i}`).value);
+                let userRad = parseFloat(document.getElementById(`p_rad_${i}`).value);
+                
+                let R_base;
+                if (i === 0) { R_base = userRad; } else {
+                    let minAllowed = verifiedRadii[i-1] + 20; 
+                    R_base = Math.max(userRad, minAllowed);
+                }
+                verifiedRadii.push(R_base); 
+
+                while(particleAngles[i].length < sCount) { particleAngles[i].push(Math.random() * Math.PI * 2); }
+                let col = orbitRGB[i];
+
+                for (let s = 0; s < sCount; s++) {
+                    particleAngles[i][s] -= speed; 
+                    let baseTheta = particleAngles[i][s];
+                    
+                    let currentTheta = baseTheta;
+                    let pairIndex = 0;
+
+                    if (isMultiMode && isPresetMode && i === 1) {
+                        pairIndex = Math.floor(s / 2); 
+                        let isAntiSpin = (s % 2 === 1); 
+                        currentTheta = baseTheta + (isAntiSpin ? Math.PI : 0); 
+                    }
+
+                    let sharpness = 1;
+                    if (isPresetMode) {
+                        if (activePresetType === 'p' || activePresetType === 'torus') sharpness = 3;
+                        if (activePresetType === 'd' || activePresetType === 'multi') sharpness = 4;
+                        if (activePresetType === 'f') sharpness = 6;
+                    }
+                    
+                    let teardrop_envelope = Math.pow(Math.abs(Math.cos((freq / 2) * currentTheta)), sharpness);
+                    let r_base_2d = R_base * ((1 - amp) + amp * teardrop_envelope);
+                    
+                    let px0 = 0; 
+                    let py0 = r_base_2d * Math.cos(currentTheta); 
+                    let pz0 = r_base_2d * Math.sin(currentTheta); 
+                    
+                    let finalX = px0, finalY = py0, finalZ = pz0;
+
+                    if (isPresetMode && i === 1) {
+                        let phi = sweepAngle; 
+
+                        if (!isMultiMode) {
+                            if (activePresetType === 's' || activePresetType === 'p') {
+                                finalX = pz0 * Math.sin(phi); finalY = py0; finalZ = pz0 * Math.cos(phi);
+                            } 
+                            else if (activePresetType === 'torus' || activePresetType === 'd' || activePresetType === 'f') {
+                                finalX = py0 * Math.sin(phi); finalY = py0 * Math.cos(phi); finalZ = pz0;
+                            }
+                            else if (activePresetType === 'multi') {
+                                let plane = Math.floor(frameCount / 40) % 3;
+                                if (plane === 0) { finalX = pz0 * Math.sin(phi); finalY = py0; finalZ = pz0 * Math.cos(phi); } 
+                                else if (plane === 1) { finalX = py0 * Math.cos(phi); finalY = py0 * Math.sin(phi); finalZ = pz0; } 
+                                else { finalX = py0; finalY = pz0 * Math.sin(phi); finalZ = pz0 * Math.cos(phi); }
+                            }
+                        } else {
+                            let numPairs = Math.max(1, sCount / 2);
+
+                            if (activePresetType === 's' || activePresetType === 'torus') {
+                                if (activePresetType === 's') { finalX = pz0 * Math.sin(phi); finalY = py0; finalZ = pz0 * Math.cos(phi); } 
+                                else { finalX = py0 * Math.sin(phi); finalY = py0 * Math.cos(phi); finalZ = pz0; }
+                            }
+                            else if (activePresetType === 'p') {
+                                let p_plane = pairIndex % 3;
+                                let localX = 0, localY = 0, localZ = 0;
+                                if (p_plane === 0) { localX = px0; localY = py0; localZ = pz0; }      
+                                else if (p_plane === 1) { localX = pz0; localY = px0; localZ = py0; } 
+                                else { localX = py0; localY = pz0; localZ = px0; }                    
+                                
+                                finalX = localX * Math.cos(phi) - localY * Math.sin(phi);
+                                finalY = localX * Math.sin(phi) + localY * Math.cos(phi);
+                                finalZ = localZ;
+                            }
+                            else {
+                                let phi_offset = (Math.PI / numPairs) * pairIndex;
+                                let tilt = (Math.PI / 3) * ((pairIndex % 3) - 1); 
+                                
+                                let x1 = py0 * Math.sin(phi_offset);
+                                let y1 = py0 * Math.cos(phi_offset);
+                                let z1 = pz0;
+
+                                let localX = x1;
+                                let localY = y1 * Math.cos(tilt) - z1 * Math.sin(tilt);
+                                let localZ = y1 * Math.sin(tilt) + z1 * Math.cos(tilt);
+
+                                finalX = localX * Math.cos(phi) - localY * Math.sin(phi);
+                                finalY = localX * Math.sin(phi) + localY * Math.cos(phi);
+                                finalZ = localZ;
+                            }
+                        }
+                    } else {
+                        let px_norm = r_base_2d * Math.cos(baseTheta);
+                        let pz_norm = r_base_2d * Math.sin(baseTheta);
+                        let splitAngle = (Math.PI / sCount) * s; if(sCount === 0) splitAngle = 0;
+                        finalX = px_norm * Math.cos(splitAngle); 
+                        finalY = px_norm * Math.sin(splitAngle); 
+                        finalZ = pz_norm;
+                    }
+
+                    let proj = project3D(finalX, finalY, finalZ, rX, rY, rZ, focal, zoom);
+                    let basePSize = (i === 0) ? 1.5 : 2.5;
+                    let pSize = Math.max(1.0, basePSize * proj.scale * Math.sqrt(zoom));
+                    
+                    if(proj.screenX < 0 || proj.screenX > width || proj.screenY < 0 || proj.screenY > height) continue;
+
+                    ctx.beginPath(); ctx.arc(proj.screenX, proj.screenY, pSize, 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(${col}, ${Math.max(0.3, Math.min(1, proj.scale))})`;
+                    
+                    if (Obs_n < 200) { ctx.shadowBlur = (i===0)? 4 : 10; ctx.shadowColor = `rgb(${col})`; } 
+                    ctx.fill(); ctx.shadowBlur = 0;
+                }
+            }
+        }
+        
+        draw();
+    </script>
+</body>
+</html>
