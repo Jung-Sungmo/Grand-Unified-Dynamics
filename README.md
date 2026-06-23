@@ -1,4 +1,5 @@
 # Grand-Unified-Dynamics
+![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20807203.svg)](https://doi.org/10.5281/zenodo.20807203)
 Jung_Sung-mo_Grand_Unified_Dynamics-Multi-Dimensional_Trajectory_Engine_Master_Simulator
 This repository contains the official simulation source code for **"Jung Sung-mo's Grand Unified Dynamics"**. 
 This simulator implements the particle multi-dimensional trajectory dynamics and parametric equations as described in the accompanying research paper.
