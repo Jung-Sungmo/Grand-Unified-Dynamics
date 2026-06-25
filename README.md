@@ -12,6 +12,10 @@ This simulator implements the particle multi-dimensional trajectory dynamics and
 ## Contents
 - **Simulation Engine**: Core algorithms for spherical coordinate mapping and trajectory control.
 - **Languages**: This simulator is localized into 8 major languages for global accessibility.
+- 
+## 🚀 Development Status & Roadmap
+	Version 1.0 represents our foundational proof-of-concept, establishing the "basic dynamics of a single torus pump" based strictly on deterministic mechanics, fully discarding probabilistic models.
+	Version 2.0 (Under Urgent Development): We are currently engineering the [Grand Unified Dynamics Master Simulator Ver 2.0]. This major upgrade will flawlessly implement the geometric reverse-spin mechanics of the Pauli Exclusion Principle and the centrifugal Nodal Planes across s,p,d, and f orbitals.
 
 ## Intellectual Property & Legal Notice
 **Copyright © 2026 Jung Sung-mo. All Rights Reserved.**
